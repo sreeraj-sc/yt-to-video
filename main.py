@@ -2,7 +2,10 @@ import os
 import pytube
 from moviepy.editor import *
 import smtplib
-from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 # Ask user for the YouTube video URL
 video_url = input("Enter the YouTube video URL: ")
@@ -37,24 +40,32 @@ os.remove(mp3_path)
 
 print("Done! Video saved to", output_path)
 
-# Send email with the video file as attachment
-smtp_server = 'smtp.gmail.com'
-smtp_port = 587
-smtp_username = 'username'  # Replace with your Gmail address
-smtp_password = 'password'  # Replace with the App Password generated earlier
+# Email the converted file
+fromaddr = "your_email_address@gmail.com"
+toaddr = "recipient_email_address@gmail.com"
 
-msg = EmailMessage()
-msg['From'] = smtp_username
-msg['To'] = 'email'  # Replace with the recipient's email address
-msg['Subject'] = 'Your converted video'
-msg.set_content('Please find attached the converted video.')
-with open(output_path, 'rb') as f:
-    file_data = f.read()
-msg.add_attachment(file_data, maintype='video', subtype='mp4', filename=output_file_name)
+# Create a multipart message object and set headers
+msg = MIMEMultipart()
+msg['From'] = fromaddr
+msg['To'] = toaddr
+msg['Subject'] = "Converted Video"
 
-with smtplib.SMTP(smtp_server, smtp_port) as server:
-    server.starttls()
-    server.login(smtp_username, smtp_password)
-    server.send_message(msg)
+# Attach the converted file
+attachment = open(output_path, "rb")
+p = MIMEBase('application', 'octet-stream')
+p.set_payload((attachment).read())
+encoders.encode_base64(p)
+p.add_header('Content-Disposition', "attachment; filename= %s" % output_file_name)
+msg.attach(p)
 
-print('Email sent!')
+# Login to Gmail and send email
+smtp_username = "your_email_address@gmail.com"
+smtp_password = "your_app_password"
+server = smtplib.SMTP('smtp.gmail.com', 587)
+server.starttls()
+server.login(smtp_username, smtp_password)
+text = msg.as_string()
+server.sendmail(fromaddr, toaddr, text)
+server.quit()
+
+print("Email sent!")
