@@ -1,6 +1,8 @@
 import os
 import pytube
 from moviepy.editor import *
+import smtplib
+from email.message import EmailMessage
 
 # Ask user for the YouTube video URL
 video_url = input("Enter the YouTube video URL: ")
@@ -34,3 +36,25 @@ video.write_videofile(output_path, audio_codec="aac", threads=4)
 os.remove(mp3_path)
 
 print("Done! Video saved to", output_path)
+
+# Send email with the video file as attachment
+smtp_server = 'smtp.gmail.com'
+smtp_port = 587
+smtp_username = 'username'  # Replace with your Gmail address
+smtp_password = 'password'  # Replace with the App Password generated earlier
+
+msg = EmailMessage()
+msg['From'] = smtp_username
+msg['To'] = 'email'  # Replace with the recipient's email address
+msg['Subject'] = 'Your converted video'
+msg.set_content('Please find attached the converted video.')
+with open(output_path, 'rb') as f:
+    file_data = f.read()
+msg.add_attachment(file_data, maintype='video', subtype='mp4', filename=output_file_name)
+
+with smtplib.SMTP(smtp_server, smtp_port) as server:
+    server.starttls()
+    server.login(smtp_username, smtp_password)
+    server.send_message(msg)
+
+print('Email sent!')
